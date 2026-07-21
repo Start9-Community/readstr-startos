@@ -1,5 +1,6 @@
 import { storeJson } from './fileModels/store.json'
 import { i18n } from './i18n'
+import { uiHostId, uiInterfaceId } from './interfaces'
 import { sdk } from './sdk'
 import { postgresDb, postgresPort, postgresUser, uiPort } from './utils'
 
@@ -15,10 +16,16 @@ export const main = sdk.setupMain(async ({ effects }) => {
   // LAN out of the box, plus any custom hosts set via Configure. .const() reruns
   // this (restarting the daemons) if the assigned addresses change later, e.g.
   // when a Tor address is added.
-  const ui = await sdk.serviceInterface.getOwn(effects, 'ui').const()
-  const assignedHosts = (ui?.addressInfo?.nonLocal.hostnames ?? []).map(
-    (h) => h.hostname,
-  )
+  const assignedHosts = await sdk.host
+    .getOwn(effects, uiHostId, (host) => {
+      const iface = Object.values(host?.bindings ?? {})
+        .flatMap((b) => Object.values(b.interfaces))
+        .find((i) => i.id === uiInterfaceId)
+      return (iface?.addressInfo.nonLocal.hostnames ?? []).map(
+        (h) => h.hostname,
+      )
+    })
+    .const()
   const userHosts = (store.nip98AllowedHosts ?? [])
     .map((h) => h.trim())
     .filter(Boolean)
@@ -26,7 +33,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
 
   // PostgreSQL runs as a sidecar subcontainer. Subcontainers in a service share
   // a network namespace, so the app reaches the database over localhost.
-  const postgresSub = await sdk.SubContainer.of(
+  const postgresSub = sdk.SubContainer.of(
     effects,
     { imageId: 'postgres' },
     sdk.Mounts.of().mountVolume({
@@ -38,7 +45,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
     'postgres-sub',
   )
 
-  const appSub = await sdk.SubContainer.of(
+  const appSub = sdk.SubContainer.of(
     effects,
     { imageId: 'readstr' },
     sdk.Mounts.of(),

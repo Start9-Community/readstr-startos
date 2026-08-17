@@ -4,13 +4,15 @@
 
 # Readstr on StartOS
 
-> **Upstream docs:** <https://github.com/privkeyio/readstr>
->
 > Everything not listed in this document should behave the same as upstream
 > Readstr. If a feature, setting, or behavior is not mentioned here, the
-> upstream documentation is accurate and fully applicable.
+> upstream documentation is accurate and fully applicable — see the
+> Documentation section of `instructions.md` for links.
 
-[Readstr](https://github.com/privkeyio/readstr) is a self-hosted, Google Reader-style feed aggregator for RSS/Atom, Nostr, and video. This package runs its Next.js standalone server alongside its own PostgreSQL database, so your subscriptions and reading state live entirely on your own server. You sign in with your own Nostr key (NIP-07 or NIP-46), organize subscriptions with tags or categories, and sync them across devices over Nostr.
+[Readstr](https://github.com/privkeyio/readstr) is a reader for RSS feeds, Nostr long-form articles, and video subscriptions, with your Nostr identity as the login. This package runs it with a private PostgreSQL sidecar and keeps its login allow-list in step with whatever addresses StartOS assigns the service.
+
+- **Upstream repo:** <https://github.com/privkeyio/readstr>
+- **Wrapper repo:** <https://github.com/Start9-Community/readstr-startos>
 
 ---
 
@@ -18,168 +20,147 @@
 
 - [Image and Container Runtime](#image-and-container-runtime)
 - [Volume and Data Layout](#volume-and-data-layout)
-- [Installation and First-Run Flow](#installation-and-first-run-flow)
-- [Configuration Management](#configuration-management)
-- [Network Access and Interfaces](#network-access-and-interfaces)
-- [Actions (StartOS UI)](#actions-startos-ui)
-- [Backups and Restore](#backups-and-restore)
-- [Health Checks](#health-checks)
+- [File Models](#file-models)
 - [Dependencies](#dependencies)
+- [Network Access and Interfaces](#network-access-and-interfaces)
+- [Installation and First-Run Flow](#installation-and-first-run-flow)
+- [Actions](#actions)
+- [Tasks](#tasks)
+- [Health Checks](#health-checks)
+- [Backups and Restore](#backups-and-restore)
 - [Limitations and Differences](#limitations-and-differences)
-- [What Is Unchanged from Upstream](#what-is-unchanged-from-upstream)
 - [Quick Reference for AI Consumers](#quick-reference-for-ai-consumers)
 
 ---
 
 ## Image and Container Runtime
 
-The service runs two containers:
+Two images: the application, built from the vendored upstream, and a PostgreSQL sidecar.
 
-| Image      | Source                                                                                 | Runtime                                                  |
-| ---------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `readstr`  | Built from source via the upstream `Dockerfile` in the `readstr` git submodule         | Next.js standalone server (Node Alpine)                  |
-| `postgres` | Stock PostgreSQL Alpine image (pinned in the manifest), run as a sidecar               | The database the app connects to over localhost          |
+| Property      | Value                                              |
+| ------------- | -------------------------------------------------- |
+| Images        | Built from the upstream submodule, plus `postgres` |
+| Architectures | x86_64, aarch64                                    |
+| Command       | Each image's own entrypoint                        |
 
-- **Architectures:** x86_64, aarch64
-- **App entrypoint:** upstream's — runs Prisma `migrate deploy`, then `node server.js`. The database container uses the stock PostgreSQL entrypoint, which initializes the data directory and creates the role and database on first start.
+| Subcontainer   | Purpose                                    |
+| -------------- | ------------------------------------------ |
+| `readstr-sub`  | The application — attach here for app logs |
+| `postgres-sub` | The private database                       |
 
----
+**The application image is upstream's own**, built from its Dockerfile in the vendored source. Its entrypoint runs the database migrations before starting the server, so there is no migration oneshot here — that ordering is the image's.
 
 ## Volume and Data Layout
 
-| Volume | Mount Point          | Purpose                                                                 |
-| ------ | -------------------- | ---------------------------------------------------------------------- |
-| `main` | —                    | StartOS settings: the database password, default relays, allowed hosts |
-| `db`   | `/var/lib/postgresql` | PostgreSQL data directory — all feeds, subscriptions, and reading state |
+Two volumes, backed up by different mechanisms.
 
-**Key paths:**
+| Volume | Mount Point           | Purpose                       |
+| ------ | --------------------- | ----------------------------- |
+| `main` | — not mounted         | The package's own store       |
+| `db`   | `/var/lib/postgresql` | The PostgreSQL data directory |
 
-- `db:/var/lib/postgresql/data`: the PostgreSQL data directory (`PGDATA`).
-- `main:start9/store.json`: StartOS persistent settings.
+**The application container mounts nothing.** Everything Readstr knows — subscriptions, read state, cached articles — is in PostgreSQL, and the package's own settings are read by this package's code rather than by the app.
 
----
+| Path                            | Written by          | Holds                                        |
+| ------------------------------- | ------------------- | -------------------------------------------- |
+| _PGDATA_                        | PostgreSQL          | Feeds, subscriptions, and everything read    |
+| `start9/store.json` (on `main`) | Init and the action | The database password, relays, allowed hosts |
 
-## Installation and First-Run Flow
+## File Models
 
-| Step       | Upstream                           | StartOS                                                       |
-| ---------- | ---------------------------------- | ------------------------------------------------------------ |
-| Database   | Manual (docker-compose PostgreSQL) | Stock PostgreSQL sidecar, initialized automatically on first start |
-| DB password | User-supplied (`.env`)            | Auto-generated internal secret (never shown)                 |
-| Migrations | Run manually                       | Run automatically by the app entrypoint (`prisma migrate deploy`) |
-| Sign-in    | Nostr key (NIP-07 / NIP-46)        | Same                                                         |
+One model, holding three things.
 
-**First-run steps:**
+| File         | Format | Modelled                | Written by          |
+| ------------ | ------ | ----------------------- | ------------------- |
+| `store.json` | JSON   | Yes — `FileHelper.json` | Init and the action |
 
-1. Open the **Web UI** from this service's page in StartOS.
-2. Click **Connect with Nostr** and authorize with a browser extension (NIP-07, e.g. nos2x or Alby) on desktop, or pair a remote signer (NIP-46, e.g. Amber) on mobile. Your npub is your identity, so there is no separate account.
-3. Use **Add Feed** to subscribe to RSS feeds, Nostr authors (npub or NIP-05), or YouTube/Rumble channels.
-4. If you reach this server at a non-default address, set **Allowed Hosts** in the **Configure** action so NIP-98 login is accepted.
+- **The database password**, generated once at install. The cluster was initialized with it, so it is not rotatable — and it is generated URL-safe because it is embedded in the connection string.
+- **The default relay list**, seeded from the package's defaults and passed to the application as environment.
+- **Extra allowed hosts**, for a custom domain.
 
-See [instructions.md](instructions.md) for the user-facing walkthrough.
+Everything else is passed as environment at start, and one of those values is computed rather than stored — see below.
 
----
+**Readstr's login is bound to the host the browser used.** It authenticates with NIP-98, where each signed request commits to the address it was sent to, and the server rejects any host not on its allow-list. So the package reads the interface's **current addresses** and allows all of them, which is what makes login work over LAN, over a `.local` name, and over Tor without configuration. The read is reactive: adding a Tor address later restarts the service so that address is allowed too.
 
-## Configuration Management
-
-| StartOS-Managed                                    | Upstream-Managed (in-app)        |
-| -------------------------------------------------- | -------------------------------- |
-| Database password (auto-generated internal secret) | Feed subscriptions and tags/categories |
-| Default relays (Configure action)                  | Nostr identity (your key)        |
-| Allowed hosts for NIP-98 login (Configure action)  | Reading state                    |
-
-**Environment variables set by StartOS** (`startos/main.ts`):
-
-| Variable                  | Value         | Purpose                                                                                                                       |
-| ------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`            | (composed)    | Connection string to the PostgreSQL sidecar at `127.0.0.1:5432`, built from the auto-generated password                       |
-| `DEFAULT_RELAYS`          | (Configure)   | Nostr relays for long-form content and profiles, comma-separated                                                             |
-| `NIP98_ALLOWED_HOSTS`     | (auto + Configure) | Hostnames allowed in NIP-98 auth: the interface's StartOS-assigned addresses (Tor, `.local`, LAN IP), plus custom hosts from Configure |
-| `NEXT_TELEMETRY_DISABLED` | `1`           | Disables Next.js telemetry                                                                                                   |
-
-The PostgreSQL sidecar receives the matching `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`.
-
-Default relays are `wss://relay.damus.io`, `wss://nos.lol`, and `wss://relay.nostr.band`. The Configure action accepts any number of `wss://` relays; saving restarts the service to apply. Readstr also lets users manage relays from within the app — these are the defaults it ships with.
-
----
-
-## Network Access and Interfaces
-
-| Interface     | Port | Protocol | Purpose                                       |
-| ------------- | ---- | -------- | --------------------------------------------- |
-| Web UI (`ui`) | 3000 | HTTP     | Three-panel reader and NIP-98-authenticated app |
-
-The Web UI is unmasked and carries no StartOS-level auth, because Readstr authenticates you with your own Nostr key (NIP-07 / NIP-46) and NIP-98 verifies the request host (see Allowed Hosts).
-
-**Access methods:**
-
-- LAN IP with unique port
-- `<hostname>.local` with unique port
-- Tor `.onion` address (if added)
-- Custom domains (if configured)
-
----
-
-## Actions (StartOS UI)
-
-### Configure
-
-Set the Nostr relays and allowed hosts Readstr uses, then restart to apply.
-
-| Property     | Value                                  |
-| ------------ | -------------------------------------- |
-| Availability | Any status                             |
-| Visibility   | Always visible                         |
-| Inputs       | Default Relays, Allowed Hosts (optional) |
-| Outputs      | Confirmation; restarts the service     |
-
----
-
-## Backups and Restore
-
-**Included in backup:**
-
-- A logical `pg_dump` of the `readstr` database (taken via the PostgreSQL sidecar)
-- The `main` volume — `store.json`, holding the database password, default relays, and allowed hosts
-
-**Restore behavior:**
-
-- The dump is replayed into a freshly initialized database, so the restore is tolerant of PostgreSQL patch/minor differences. The database password is restored alongside it in `store.json`, so the app's credentials match the restored database with no re-import or reconfiguration. Init regenerates the database password only on a fresh install, never on restore.
-
----
-
-## Health Checks
-
-| Check      | Display Name | Method                              | Messages                                                                       |
-| ---------- | ------------ | ----------------------------------- | ------------------------------------------------------------------------------ |
-| `postgres` | Database     | `pg_isready`                        | "PostgreSQL is ready" / "Waiting for PostgreSQL to be ready"                    |
-| `primary`  | Web UI       | Port-listening on 3000 (60s grace)  | "The Readstr web UI is ready" / "The Readstr web UI is not responding"          |
-
-The app daemon `requires` the database, so it starts only once `pg_isready` passes.
-
----
+Any custom hosts from the action are merged with those, never replacing them.
 
 ## Dependencies
 
-None.
+None. PostgreSQL runs as a private sidecar of this service rather than as a StartOS dependency.
 
----
+Readstr fetches feeds and Nostr content from the internet, so it needs a connection to be useful.
+
+## Network Access and Interfaces
+
+One interface.
+
+| Interface | Id   | Type | Port | Description |
+| --------- | ---- | ---- | ---- | ----------- |
+| Web UI    | `ui` | ui   | 3000 | The reader  |
+
+Bound on the `ui-multi` MultiHost over HTTP and not masked. **Readstr's own Nostr login gates it**, and StartOS adds no gate of its own.
+
+PostgreSQL is bound to loopback inside the service's own namespace and is not exported.
+
+**A newly added address works only after the service restarts**, since the allow-list is computed at start — but the restart happens on its own, because the address list is watched.
+
+## Installation and First-Run Flow
+
+Install generates the database password and seeds the default relays. There is no task and no credential to record.
+
+**There is no account to create.** You sign in with a Nostr key — a browser extension or another NIP-07 signer — and the identity is yours rather than the server's. The first start runs the database migrations before the interface answers, which is why the daemon carries a generous grace period.
+
+## Actions
+
+One action.
+
+### Configure
+
+Sets the default relay list and any extra hosts allowed for login.
+
+- **What it changes:** both lists in the store.
+- **Cost:** the service restarts, explicitly — the action requests it rather than relying on a reactive read.
+- **Repeat safety:** idempotent, pre-filled with the current values.
+- **Relays are validated** as `wss://` URLs by the form.
+- **Allowed hosts are additive.** The addresses StartOS assigns are always permitted; this list is for a custom domain the OS does not know about.
+
+Relays can also be managed inside the application; this list is the default the app starts from.
+
+## Tasks
+
+None. This package raises no tasks, so the service is never held on a prompt and its ordinary controls are always available.
+
+## Health Checks
+
+Two checks, both shown.
+
+| Check      | Displayed as | Method                                | Grace |
+| ---------- | ------------ | ------------------------------------- | ----- |
+| `postgres` | "Database"   | The database is accepting connections | —     |
+| `primary`  | "Web UI"     | Port 3000 is listening                | 60s   |
+
+The application waits for the database, so a failing database shows as the interface never starting rather than as two independent failures.
+
+**Neither says anything about feeds.** An unreachable relay, a dead RSS source, or a feed that stopped updating all show green checks and are visible in the application.
+
+## Backups and Restore
+
+**The database is dumped; the store is copied.**
+
+An rsync of a live PostgreSQL data directory is not crash-consistent, so the database is captured as a logical dump instead — which also survives a future PostgreSQL image bump rather than being tied to the on-disk format it was taken with. The `db` volume's files are never captured; a restore starts the engine and replays the dump into it.
+
+The `main` volume is added alongside, which is what carries the database password — and the dump cannot be replayed without it, so the two halves are not independent.
+
+A restored instance comes back with the same subscriptions and read state. Its allow-list is recomputed from the new server's addresses, so login works at the new address without intervention.
 
 ## Limitations and Differences
 
-1. **Custom domains require Allowed Hosts.** Readstr verifies the host in the NIP-98 auth token. The package auto-allows every address StartOS assigns the interface (Tor `.onion`, `.local`, LAN IP), so Tor and LAN work out of the box; for a custom domain you added yourself, set it in **Allowed Hosts** in Configure or login at that address may be rejected.
-2. **Single-node PostgreSQL sidecar.** The database runs as a sidecar container within this service, not as a separate StartOS service you manage, and is initialized and migrated automatically on first start.
-3. **Nostr sign-in required.** There is no separate account system; your npub is your identity.
-
----
-
-## What Is Unchanged from Upstream
-
-- RSS/Atom feed aggregation in a three-panel reader
-- Nostr long-form content (NIP-23) alongside RSS
-- YouTube and Rumble video subscriptions
-- Tag- and category-based organization with cross-device sync over Nostr
-- Nostr sign-in via NIP-07 and NIP-46 remote signers
-- The Next.js standalone server, tRPC API, and Prisma schema
+1. **Login is a Nostr key**, not a username and password. There is no account recovery here because there is no account.
+2. **The database password cannot be rotated** — the cluster was initialized with it.
+3. **A custom domain must be added to the allow-list** before NIP-98 login will work on it; StartOS-assigned addresses are automatic.
+4. **The datastore is private.** PostgreSQL is a sidecar of this service and cannot be shared or substituted.
+5. **The application container is stateless.** Anything not in PostgreSQL is not kept.
+6. **Migrations run inside the image's entrypoint**, so a failed migration presents as the daemon not starting.
 
 ---
 
@@ -187,27 +168,33 @@ None.
 
 ```yaml
 package_id: readstr
-architectures: [x86_64, aarch64]
-images:
-  - readstr (Next.js app, built from source)
-  - postgres (sidecar)
+image: built from the vendored ./readstr submodule # plus postgres:16-alpine
+architectures:
+  - x86_64
+  - aarch64
+subcontainers:
+  - readstr-sub # mounts nothing; entrypoint runs prisma migrate deploy, then the server
+  - postgres-sub
 volumes:
-  main: StartOS settings (store.json)
+  main: null # not mounted; holds start9/store.json only
   db: /var/lib/postgresql
-ports:
-  ui: 3000
-dependencies: none
+file_models:
+  - start9/store.json # dbPassword, defaultRelays, nip98AllowedHosts
 startos_managed_env_vars:
   - DATABASE_URL
   - DEFAULT_RELAYS
-  - NIP98_ALLOWED_HOSTS
   - NEXT_TELEMETRY_DISABLED
+  - NIP98_ALLOWED_HOSTS # computed from the interface's current addresses plus user hosts
+  - POSTGRES_USER
+  - POSTGRES_PASSWORD
+  - POSTGRES_DB
+dependencies: []
+interfaces:
+  ui: { type: ui, port: 3000 } # Readstr's own Nostr login; no gate added by StartOS
 actions:
   - configure
+tasks: []
 health_checks:
-  - postgres: pg_isready
-  - primary: port_check 3000
-backups:
-  - pg_dump (readstr database)
-  - main volume (store.json)
+  - postgres # displayed "Database"
+  - primary # displayed "Web UI"; 60s grace for migrations
 ```

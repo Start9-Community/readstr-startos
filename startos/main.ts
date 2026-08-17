@@ -61,6 +61,10 @@ export const main = sdk.setupMain(async ({ effects }) => {
     DEFAULT_RELAYS: store.defaultRelays.join(','),
     NEXT_TELEMETRY_DISABLED: '1',
   }
+  // NIP-98 binds each signed request to the host the browser used and rejects
+  // anything off this list, so it has to track the interface's own addresses --
+  // read .const() above, because adding a Tor address later must restart the
+  // service or login silently fails on the new address.
   if (allowedHosts.length) env.NIP98_ALLOWED_HOSTS = allowedHosts.join(',')
 
   return sdk.Daemons.of(effects)

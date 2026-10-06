@@ -4,7 +4,7 @@ import { defaultRelays } from '../utils'
 
 // Package-internal state. Written only by our init + actions, so .const()
 // gives automatic restart-on-change.
-const storeConfigSchema = z.object({
+const storeConfigSchema = z.looseObject({
   // Generated once at install; password for the bundled PostgreSQL role.
   dbPassword: z.string().catch(''),
   // The relays the app uses by default (passed as DEFAULT_RELAYS); users can

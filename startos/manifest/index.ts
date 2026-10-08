@@ -19,7 +19,7 @@ export const manifest = setupManifest({
       source: {
         dockerBuild: {
           workdir: './readstr',
-          dockerfile: './readstr/Dockerfile',
+          dockerfile: './Dockerfile',
         },
       },
       arch: ['x86_64', 'aarch64'],

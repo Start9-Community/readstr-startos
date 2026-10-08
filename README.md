@@ -48,7 +48,7 @@ Two images: the application, built from the vendored upstream, and a PostgreSQL 
 | `readstr-sub`  | The application — attach here for app logs |
 | `postgres-sub` | The private database                       |
 
-**The application image is upstream's own**, built from its Dockerfile in the vendored source. Its entrypoint runs the database migrations before starting the server, so there is no migration oneshot here — that ordering is the image's.
+**The application image is upstream's**, built from the vendored source with the package's `Dockerfile`: upstream's own, except that the Prisma CLI is installed under `/opt/prisma-cli` and linked into `node_modules/.bin`, because `npm install` run inside the app directory crashes while resolving the app's manifest. Its entrypoint runs the database migrations before starting the server, so there is no migration oneshot here — that ordering is the image's.
 
 ## Volume and Data Layout
 

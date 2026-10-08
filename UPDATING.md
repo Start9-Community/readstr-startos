@@ -28,10 +28,13 @@ repo. The bundled database is the stock `postgres` image, pinned by tag in the m
    git add readstr
    ```
 
-2. Bump `version` in `startos/versions/current.ts` (and add a migration file only if the
+2. Diff the new `readstr/Dockerfile` against the package's `Dockerfile` and carry upstream's
+   changes over. The package's copy differs only in the Prisma CLI step.
+
+3. Bump `version` in `startos/versions/current.ts` (and add a migration file only if the
    upgrade needs one) and update its `releaseNotes`.
 
-3. Rebuild and test (`make`, then install on a StartOS box) before opening a PR — confirm
+4. Rebuild and test (`make`, then install on a StartOS box) before opening a PR — confirm
    Prisma migrations still apply against the bundled PostgreSQL.
 
 ## Bumping PostgreSQL

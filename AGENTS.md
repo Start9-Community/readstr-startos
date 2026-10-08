@@ -34,6 +34,7 @@ verified, tried, and decided belongs in the commit message and the PR body.
 
 ## This repo
 
+- **Build from `./Dockerfile`, not `readstr/Dockerfile`.** It is upstream's with the Prisma CLI installed outside `/app`; a submodule bump re-diffs it against upstream's.
 - **Don't add a migration oneshot** — upstream's entrypoint runs `prisma migrate deploy` before the server starts.
 - **Don't mount a volume in `readstr-sub`** — all of the app's state belongs in PostgreSQL.
 - **Default branch is `main`, not `master`.** The CI workflows name `main`; leave them.

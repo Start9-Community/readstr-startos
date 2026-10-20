@@ -1,7 +1,7 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.1.0:5',
+  version: '0.1.0:6',
   releaseNotes: {
     en_US: `StartOS package improvements; no change to Readstr.`,
     es_ES: `Mejoras en el paquete de StartOS; sin cambios en Readstr.`,

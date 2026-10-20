@@ -168,7 +168,7 @@ A restored instance comes back with the same subscriptions and read state. Its a
 
 ```yaml
 package_id: readstr
-image: built from the vendored ./readstr submodule # plus postgres:16-alpine
+image: built from the vendored ./readstr submodule # plus the stock postgres image
 architectures:
   - x86_64
   - aarch64

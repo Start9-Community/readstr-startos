@@ -168,7 +168,7 @@ A restored instance comes back with the same subscriptions and read state. Its a
 
 ```yaml
 package_id: readstr
-image: built from the vendored ./readstr submodule # plus postgres:16-alpine
+image: built from the vendored ./readstr submodule # plus the stock postgres image
 architectures:
   - x86_64
   - aarch64
@@ -185,6 +185,7 @@ startos_managed_env_vars:
   - DEFAULT_RELAYS
   - NEXT_TELEMETRY_DISABLED
   - NIP98_ALLOWED_HOSTS # computed from the interface's current addresses plus user hosts
+  - NPM_CONFIG_UPDATE_NOTIFIER # false; stops the entrypoint's npx from calling the npm registry
   - POSTGRES_USER
   - POSTGRES_PASSWORD
   - POSTGRES_DB

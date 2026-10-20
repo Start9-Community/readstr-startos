@@ -60,6 +60,9 @@ export const main = sdk.setupMain(async ({ effects }) => {
     DATABASE_URL: databaseUrl,
     DEFAULT_RELAYS: store.defaultRelays.join(','),
     NEXT_TELEMETRY_DISABLED: '1',
+    // The entrypoint's `npx prisma` otherwise asks registry.npmjs.org for a
+    // newer npm on every start.
+    NPM_CONFIG_UPDATE_NOTIFIER: 'false',
   }
   // NIP-98 binds each signed request to the host the browser used and rejects
   // anything off this list, so it has to track the interface's own addresses --

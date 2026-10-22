@@ -1,13 +1,17 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.1.0:6',
+  version: '0.1.0:7',
   releaseNotes: {
-    en_US: `Fixes signed-in requests being rejected as replays when several tabs or devices use Readstr at once. StartOS package improvements.`,
-    es_ES: `Corrige que las solicitudes con sesión iniciada se rechazaran como repeticiones al usar Readstr en varias pestañas o dispositivos a la vez. Mejoras en el paquete de StartOS.`,
-    de_DE: `Behebt, dass angemeldete Anfragen als Wiederholungen abgelehnt wurden, wenn Readstr in mehreren Tabs oder auf mehreren Geräten gleichzeitig genutzt wird. Verbesserungen am StartOS-Paket.`,
-    pl_PL: `Naprawia odrzucanie żądań zalogowanego użytkownika jako powtórzeń, gdy Readstr jest używany jednocześnie w kilku kartach lub na kilku urządzeniach. Ulepszenia pakietu StartOS.`,
-    fr_FR: `Corrige le rejet des requêtes authentifiées comme rejeux lorsque Readstr est utilisé dans plusieurs onglets ou sur plusieurs appareils à la fois. Améliorations du paquet StartOS.`,
+    en_US:
+      'Stops trusting certificates from a compromised certificate authority (eMudhra).',
+    es_ES:
+      'Deja de confiar en los certificados de una autoridad de certificación comprometida (eMudhra).',
+    de_DE:
+      'Vertraut Zertifikaten einer kompromittierten Zertifizierungsstelle (eMudhra) nicht mehr.',
+    pl_PL:
+      'Przestaje ufać certyfikatom przejętego urzędu certyfikacji (eMudhra).',
+    fr_FR: `Ne fait plus confiance aux certificats d'une autorité de certification compromise (eMudhra).`,
   },
   migrations: {
     up: async ({ effects }) => {},

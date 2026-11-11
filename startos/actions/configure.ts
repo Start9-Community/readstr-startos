@@ -1,3 +1,4 @@
+import { z } from '@start9labs/start-sdk'
 import { sdk } from '../sdk'
 import { i18n } from '../i18n'
 import { storeJson } from '../fileModels/store.json'
@@ -93,6 +94,12 @@ export const configure = sdk.Action.withInput(
     }
   },
   async ({ effects, input }) => {
+    if (
+      input.flashCheckoutUrl &&
+      !z.url().safeParse(input.flashCheckoutUrl).success
+    ) {
+      throw new Error(i18n('Must be an https:// URL'))
+    }
     await storeJson.merge(effects, {
       defaultRelays: input.defaultRelays,
       nip98AllowedHosts: input.nip98AllowedHosts,

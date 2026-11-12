@@ -31,6 +31,9 @@ const dict = {
   'Must start with whsec_': 22,
   'Flash API Key': 23,
   'Optional. A Flash API key with the View Subscriptions scope. With it, Readstr checks the status of each subscriber with Flash instead of trusting webhook deliveries alone, which recovers from dropped or out-of-order webhooks.': 24,
+  'Flash Service ID': 25,
+  'The UUID of the Flash service for Readstr, from its checkout URL. Set this when the Flash account has multiple services; otherwise subscriptions to another service can grant Readstr access.': 26,
+  'Flash Service ID must be a UUID': 27,
 } as const
 
 /**

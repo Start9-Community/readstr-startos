@@ -17,6 +17,7 @@ const storeConfigSchema = z.looseObject({
   flashCheckoutUrl: z.string().nullable().catch(null),
   flashWebhookSecret: z.string().nullable().catch(null),
   flashApiKey: z.string().nullable().catch(null),
+  flashServiceId: z.string().nullable().catch(null),
 })
 
 export type StoreConfig = z.infer<typeof storeConfigSchema>

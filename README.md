@@ -77,7 +77,7 @@ One model, holding four things.
 - **The database password**, generated once at install. The cluster was initialized with it, so it is not rotatable — and it is generated URL-safe because it is embedded in the connection string.
 - **The default relay list**, seeded from the package's defaults and passed to the application as environment.
 - **Extra allowed hosts**, for a custom domain.
-- **Flash payment settings** — the checkout URL and the webhook signing secret, both optional (`null` when unset). Each is passed to the application as environment only when set.
+- **Flash payment settings** — the checkout URL, webhook signing secret, API key and service ID, all optional (`null` when unset). Each is passed to the application as environment only when set.
 
 Everything else is passed as environment at start, and one of those values is computed rather than stored — see below.
 
@@ -119,13 +119,15 @@ One action.
 
 Sets the default relay list, any extra hosts allowed for login, and the Flash payment settings.
 
-- **What it changes:** both lists and the two Flash fields in the store.
+- **What it changes:** both lists and the four Flash fields in the store.
 - **Cost:** the service restarts, explicitly — the action requests it rather than relying on a reactive read.
 - **Repeat safety:** idempotent, pre-filled with the current values.
 - **Relays are validated** as `wss://` URLs by the form.
 - **Allowed hosts are additive.** The addresses StartOS assigns are always permitted; this list is for a custom domain the OS does not know about.
 - **Flash Checkout URL** (optional, must be `https://`) becomes `FLASH_CHECKOUT_URL`, the Flash plan signup URL; Readstr appends `?ref=<pubkey>` to it. Unset, the app's subscribe link goes nowhere.
-- **Flash Webhook Secret** (optional, masked, must start with `whsec_`) becomes `FLASH_WEBHOOK_SECRET`, the signing secret of the Flash webhook endpoint. Readstr verifies the `Flash-Signature` HMAC on every `POST` to `https://<your domain>/api/webhooks/flash` with it; unset, that endpoint answers 500 and no subscription is recorded. The form pre-fills it (masked) like the other fields. Blank fields are stored as `null`.
+- **Flash Webhook Secret** (optional, masked, must start with `whsec_`) becomes `FLASH_WEBHOOK_SECRET`, the signing secret of the Flash webhook endpoint. Readstr verifies the `Flash-Signature` HMAC on every `POST` to `https://<your domain>/api/webhooks/flash` with it; unset, that endpoint answers 500 and notifications cannot update subscription state. The form pre-fills it (masked) like the other fields. Blank fields are stored as `null`.
+- **Flash API Key** (optional, masked) becomes `FLASH_API_KEY`. Create it with only the **View Subscriptions** scope. It requires **Flash Checkout URL**: Readstr calls the API on that URL's host. With both set, webhooks trigger reconciliation against Flash's subscription records; the app also checks denied or near-expiry access, subject to per-user and global rate limits. Failed API checks fall back to the webhook behavior.
+- **Flash Service ID** (optional, UUID) becomes `FLASH_SERVICE_ID` and restricts reconciliation to that Flash service. Set it when the Flash account contains multiple services; otherwise a subscription to another service with the same pubkey can grant Readstr access. It is the `<serviceId>` in `/subscriptions/signup/<serviceId>/<planId>` in the checkout URL.
 
 Relays can also be managed inside the application; this list is the default the app starts from.
 
@@ -182,12 +184,14 @@ volumes:
   main: null # not mounted; holds start9/store.json only
   db: /var/lib/postgresql
 file_models:
-  - start9/store.json # dbPassword, defaultRelays, nip98AllowedHosts, flashCheckoutUrl, flashWebhookSecret
+  - start9/store.json # dbPassword, defaultRelays, nip98AllowedHosts, flashCheckoutUrl, flashWebhookSecret, flashApiKey, flashServiceId
 startos_managed_env_vars:
   - DATABASE_URL
   - DEFAULT_RELAYS
   - FLASH_CHECKOUT_URL # only when set in Configure
   - FLASH_WEBHOOK_SECRET # only when set in Configure
+  - FLASH_API_KEY # only when set in Configure; requires FLASH_CHECKOUT_URL
+  - FLASH_SERVICE_ID # only when set in Configure; scopes reconciliation
   - NEXT_TELEMETRY_DISABLED
   - NIP98_ALLOWED_HOSTS # computed from the interface's current addresses plus user hosts
   - NPM_CONFIG_UPDATE_NOTIFIER # false; stops the entrypoint's npx from calling the npm registry

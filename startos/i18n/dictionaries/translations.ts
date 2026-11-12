@@ -27,6 +27,9 @@ export default {
     22: 'Debe empezar por whsec_',
     23: 'Clave API de Flash',
     24: 'Opcional. Una clave API de Flash con el permiso View Subscriptions. Con ella, Readstr comprueba el estado de cada suscriptor con Flash en lugar de fiarse solo de los webhooks, lo que corrige webhooks perdidos o desordenados.',
+    25: 'ID del servicio Flash',
+    26: 'El UUID del servicio Flash de Readstr, incluido en su URL de pago. Configúralo si la cuenta Flash tiene varios servicios; de lo contrario, las suscripciones a otro servicio pueden dar acceso a Readstr.',
+    27: 'El ID del servicio Flash debe ser un UUID',
   },
   de_DE: {
     0: 'Readstr wird gestartet',
@@ -54,6 +57,9 @@ export default {
     22: 'Muss mit whsec_ beginnen',
     23: 'Flash-API-Schlüssel',
     24: 'Optional. Ein Flash-API-Schlüssel mit der Berechtigung View Subscriptions. Damit prüft Readstr den Status jedes Abonnenten bei Flash, statt sich nur auf Webhooks zu verlassen, und behebt so verlorene oder in falscher Reihenfolge eintreffende Webhooks.',
+    25: 'Flash-Service-ID',
+    26: 'Die UUID des Flash-Dienstes für Readstr aus seiner Checkout-URL. Bei mehreren Diensten im Flash-Konto angeben; andernfalls können Abonnements eines anderen Dienstes Readstr-Zugriff gewähren.',
+    27: 'Die Flash-Service-ID muss eine UUID sein',
   },
   pl_PL: {
     0: 'Uruchamianie Readstr',
@@ -81,6 +87,9 @@ export default {
     22: 'Musi zaczynać się od whsec_',
     23: 'Klucz API Flash',
     24: 'Opcjonalnie. Klucz API Flash z uprawnieniem View Subscriptions. Dzięki niemu Readstr sprawdza status każdego subskrybenta we Flash zamiast polegać wyłącznie na webhookach, co naprawia utracone lub nieuporządkowane webhooki.',
+    25: 'Identyfikator usługi Flash',
+    26: 'UUID usługi Flash dla Readstr z jej adresu URL płatności. Ustaw go, jeśli konto Flash ma wiele usług; w przeciwnym razie subskrypcje innej usługi mogą przyznawać dostęp do Readstr.',
+    27: 'Identyfikator usługi Flash musi być identyfikatorem UUID',
   },
   fr_FR: {
     0: 'Démarrage de Readstr',
@@ -108,5 +117,8 @@ export default {
     22: 'Doit commencer par whsec_',
     23: 'Clé API Flash',
     24: 'Facultatif. Une clé API Flash avec l’autorisation View Subscriptions. Avec elle, Readstr vérifie le statut de chaque abonné auprès de Flash au lieu de se fier uniquement aux webhooks, ce qui corrige les webhooks perdus ou reçus dans le désordre.',
+    25: 'Identifiant du service Flash',
+    26: 'Le UUID du service Flash de Readstr, tiré de son URL de paiement. Renseignez-le si le compte Flash possède plusieurs services ; sinon, les abonnements à un autre service peuvent donner accès à Readstr.',
+    27: 'L’identifiant du service Flash doit être un UUID',
   },
 } satisfies Record<string, LangDict>

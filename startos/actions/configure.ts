@@ -77,6 +77,15 @@ const inputSpec = InputSpec.of({
     masked: true,
     placeholder: null,
   }),
+  flashServiceId: Value.text({
+    name: i18n('Flash Service ID'),
+    description: i18n(
+      'The UUID of the Flash service for Readstr, from its checkout URL. Set this when the Flash account has multiple services; otherwise subscriptions to another service can grant Readstr access.',
+    ),
+    required: false,
+    default: null,
+    placeholder: null,
+  }),
 })
 
 const orNull = (v: string | null | undefined) => v?.trim() || null
@@ -102,6 +111,7 @@ export const configure = sdk.Action.withInput(
       flashCheckoutUrl: s?.flashCheckoutUrl ?? null,
       flashWebhookSecret: s?.flashWebhookSecret ?? null,
       flashApiKey: s?.flashApiKey ?? null,
+      flashServiceId: s?.flashServiceId ?? null,
     }
   },
   async ({ effects, input }) => {
@@ -111,12 +121,17 @@ export const configure = sdk.Action.withInput(
     ) {
       throw new Error(i18n('Must be an https:// URL'))
     }
+    const flashServiceId = orNull(input.flashServiceId)
+    if (flashServiceId && !z.uuid().safeParse(flashServiceId).success) {
+      throw new Error(i18n('Flash Service ID must be a UUID'))
+    }
     await storeJson.merge(effects, {
       defaultRelays: input.defaultRelays,
       nip98AllowedHosts: input.nip98AllowedHosts,
       flashCheckoutUrl: orNull(input.flashCheckoutUrl),
       flashWebhookSecret: orNull(input.flashWebhookSecret),
       flashApiKey: orNull(input.flashApiKey),
+      flashServiceId,
     })
     await effects.restart()
     return {

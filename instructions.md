@@ -28,6 +28,8 @@ Use **Configure** to set:
 - **Allowed Hosts** — extra hostnames to accept for NIP-98 login, for custom domains you added yourself.
 - **Flash Checkout URL** — optional. Your Flash plan signup URL (`https://…`); Readstr adds `?ref=<pubkey>` so the subscribing reader can be identified.
 - **Flash Webhook Secret** — optional. The signing secret (`whsec_…`) of your Flash webhook endpoint; Readstr uses it to check that subscription notifications really come from Flash.
+- **Flash API Key** — optional, masked. A key with only the **View Subscriptions** scope. Together with **Flash Checkout URL**, it lets Readstr recover from missed or out-of-order subscription notifications by checking Flash directly.
+- **Flash Service ID** — the UUID of the Flash service for Readstr. Set it when your Flash account has multiple services to prevent subscriptions to another service granting Readstr access.
 
 Saving restarts the service so the new settings take effect.
 
@@ -35,6 +37,9 @@ Saving restarts the service so the new settings take effect.
 
 1. In your Flash dashboard, create a plan and copy its signup URL into **Flash Checkout URL**.
 2. Add a webhook endpoint in Flash pointing at `https://<your domain>/api/webhooks/flash`, where `<your domain>` is an address of this service that Flash can reach.
-3. Copy that endpoint's signing secret (`whsec_…`) into **Flash Webhook Secret** and save.
+3. Copy that endpoint's signing secret (`whsec_…`) into **Flash Webhook Secret**.
+4. Recommended: create an API key under **Settings → API & Webhooks → API Keys** with only **View Subscriptions** and enter it in **Flash API Key**. Keep both the API key and webhook secret private.
+5. If your Flash account has multiple services, enter Readstr's service UUID in **Flash Service ID**. Find it in the checkout URL: `/subscriptions/signup/<serviceId>/<planId>`. Without this filter, reconciliation can grant access for subscriptions to other services in your account.
+6. Save to restart the service with these settings.
 
-Without the secret, Readstr rejects every Flash notification and no subscription is recorded.
+Without the webhook secret, Readstr rejects every Flash notification. With the API key and checkout URL set, it can still recover subscription state when checking a reader's denied or near-expiry access.

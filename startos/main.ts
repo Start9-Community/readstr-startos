@@ -72,6 +72,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
   if (store.flashCheckoutUrl) env.FLASH_CHECKOUT_URL = store.flashCheckoutUrl
   if (store.flashWebhookSecret)
     env.FLASH_WEBHOOK_SECRET = store.flashWebhookSecret
+  if (store.flashApiKey) env.FLASH_API_KEY = store.flashApiKey
 
   return sdk.Daemons.of(effects)
     .addDaemon('postgres', {

@@ -70,7 +70,7 @@ const inputSpec = InputSpec.of({
   flashApiKey: Value.text({
     name: i18n('Flash API Key'),
     description: i18n(
-      'Optional. A Flash API key with the View Subscriptions scope. With it, Readstr checks the status of each subscriber with Flash instead of trusting webhook deliveries alone, which recovers from dropped or out-of-order webhooks.',
+      'Optional. A Flash API key with the View Subscriptions scope. With it, Readstr checks the status of each subscriber with Flash instead of trusting webhook deliveries alone, which recovers from dropped or out-of-order webhooks. Only used when the Checkout URL is a Flash signup URL (/subscriptions/signup/<serviceId>/<planId>), so checks stay limited to that service.',
     ),
     required: false,
     default: null,

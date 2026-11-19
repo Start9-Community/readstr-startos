@@ -1,18 +1,18 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.1.0:13',
+  version: '0.1.0:14',
   releaseNotes: {
     en_US:
-      'Signing out now clears your data from the browser, including AI settings and their API key, reading history, saved views and cached images, and other open tabs follow along. Signing in as a different account on the same browser also starts clean. Profile search no longer lets the server connect to private or internal addresses, and limits how many connections and lookups each search can use.',
+      'Connections that send a request too slowly are now closed after 30 seconds instead of five minutes, so slow or stalled clients can no longer tie up the server. The server also refuses unexpected kinds of input it cannot check, instead of passing them along.',
     es_ES:
-      'Al cerrar sesión ahora se borran tus datos del navegador, incluidos los ajustes de IA y su clave API, el historial de lectura, las vistas guardadas y las imágenes en caché, y las demás pestañas abiertas también se actualizan. Iniciar sesión con otra cuenta en el mismo navegador también empieza desde cero. La búsqueda de perfiles ya no permite que el servidor se conecte a direcciones privadas o internas, y limita cuántas conexiones y consultas usa cada búsqueda.',
+      'Las conexiones que envían una solicitud demasiado despacio ahora se cierran a los 30 segundos en lugar de a los cinco minutos, así que los clientes lentos o bloqueados ya no pueden acaparar el servidor. El servidor también rechaza tipos de entrada inesperados que no puede comprobar, en lugar de dejarlos pasar.',
     de_DE:
-      'Beim Abmelden werden deine Daten jetzt aus dem Browser gelöscht, darunter KI-Einstellungen samt API-Schlüssel, Leseverlauf, gespeicherte Ansichten und zwischengespeicherte Bilder, und andere offene Tabs ziehen mit. Wer sich im selben Browser mit einem anderen Konto anmeldet, beginnt ebenfalls ohne fremde Daten. Die Profilsuche kann den Server nicht mehr mit privaten oder internen Adressen verbinden und begrenzt, wie viele Verbindungen und Abfragen jede Suche nutzt.',
+      'Verbindungen, die eine Anfrage zu langsam senden, werden jetzt nach 30 Sekunden statt nach fünf Minuten geschlossen, sodass langsame oder hängende Clients den Server nicht mehr blockieren können. Außerdem lehnt der Server unerwartete Eingabearten ab, die er nicht prüfen kann, statt sie weiterzureichen.',
     pl_PL:
-      'Wylogowanie usuwa teraz Twoje dane z przeglądarki, w tym ustawienia AI wraz z kluczem API, historię czytania, zapisane widoki i obrazy w pamięci podręcznej, a pozostałe otwarte karty również się aktualizują. Zalogowanie się innym kontem w tej samej przeglądarce także zaczyna od czystego stanu. Wyszukiwanie profili nie pozwala już serwerowi łączyć się z adresami prywatnymi ani wewnętrznymi i ogranicza liczbę połączeń i zapytań na jedno wyszukiwanie.',
+      'Połączenia, które wysyłają żądanie zbyt wolno, są teraz zamykane po 30 sekundach zamiast po pięciu minutach, więc wolni lub zawieszeni klienci nie mogą już blokować serwera. Serwer odrzuca też nieoczekiwane rodzaje danych wejściowych, których nie potrafi sprawdzić, zamiast je przepuszczać.',
     fr_FR:
-      'La déconnexion efface désormais vos données du navigateur, y compris les réglages IA et leur clé API, l’historique de lecture, les vues enregistrées et les images en cache, et les autres onglets ouverts suivent. Se connecter avec un autre compte dans le même navigateur repart aussi de zéro. La recherche de profils ne permet plus au serveur de se connecter à des adresses privées ou internes, et limite le nombre de connexions et de requêtes par recherche.',
+      'Les connexions qui envoient une requête trop lentement sont désormais fermées au bout de 30 secondes au lieu de cinq minutes, si bien que les clients lents ou bloqués ne peuvent plus accaparer le serveur. Le serveur refuse aussi les types d’entrée inattendus qu’il ne peut pas vérifier, au lieu de les laisser passer.',
   },
   migrations: {
     up: async ({ effects }) => {},
